@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/glp_erp_dev
+    username: glp_user
+    password: glp_pass_2024
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Flyway controla o schema
+
+server:
+  port: 8080
