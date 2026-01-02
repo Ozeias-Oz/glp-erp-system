@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:glp_erp_homolog}
+    username: ${DB_USER:glp_user}
+    password: ${DB_PASSWORD:glp_pass_2024}
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+server:
+  port: 8080
+
+logging:
+  level:
+    br.com.glprevenda: INFO

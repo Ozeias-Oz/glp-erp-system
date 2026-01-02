@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: glp-postgres-dev
+    environment:
+      POSTGRES_DB: glp_erp_dev
+      POSTGRES_USER: glp_user
+      POSTGRES_PASSWORD: glp_pass_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - glp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glp_user -d glp_erp_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Spring Boot (opcional - para rodar no Docker)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: glp-backend-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: glp_erp_dev
+      DB_USER: glp_user
+      DB_PASSWORD: glp_pass_2024
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - glp-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  glp-network:
+    driver: bridge
