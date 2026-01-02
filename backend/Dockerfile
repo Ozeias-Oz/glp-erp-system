@@ -19,7 +19,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 # Copiar JAR da etapa de build
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/glp-erp-backend-*.jar app.jar
 
 # Expor porta
 EXPOSE 8080
