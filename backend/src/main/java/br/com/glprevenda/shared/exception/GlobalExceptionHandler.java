@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  * Tratamento global de exceções da aplicação.
  * Centraliza o handling de erros para retornar respostas padronizadas.
  */
-@Slf4j
+@Slf4j // Anotação Lombok para logging
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
