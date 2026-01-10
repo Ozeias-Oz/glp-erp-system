@@ -43,6 +43,33 @@ public class JwtService {
     private long refreshExpiration;
     
     /**
+     * Retorna o tempo de expiração do access token em milissegundos
+     * 
+     * @return Tempo em milissegundos
+     */
+    public long getJwtExpiration() {
+        return jwtExpiration;
+    }
+
+    /**
+     * Retorna o tempo de expiração do refresh token em milissegundos
+     * 
+     * @return Tempo em milissegundos
+     */
+    public long getRefreshExpiration() {
+        return refreshExpiration;
+    }
+
+    /**
+     * Retorna a secret key utilizada para assinar tokens
+     * 
+     * @return Secret key
+     */
+    public String getSecretKey() {
+        return secretKey;
+    }
+    
+    /**
      * Extrai o username do token JWT
      * 
      * @param token Token JWT
@@ -111,6 +138,45 @@ public class JwtService {
      * @param expiration Tempo de expiração
      * @return Token JWT
      */
+    
+    /**
+     * Valida se o token é um Refresh Token
+     * 
+     * @param token JWT a ser validado
+     * @return true se for refresh token válido
+     */
+    public boolean isRefreshToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            // Refresh token NÃO tem roles
+            return ! claims.containsKey("roles");
+        } catch (Exception e) {
+            log.error("Erro ao verificar tipo de token: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Valida Refresh Token
+     * 
+     * @param token Refresh token
+     * @param userDetails Dados do usuário
+     * @return true se refresh token é válido
+     */
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        try {
+            final String username = extractUsername(token);
+            boolean isUsernameValid = username.equals(userDetails.getUsername());
+            boolean isTokenNotExpired = !isTokenExpired(token);
+            boolean isRefresh = isRefreshToken(token);
+            
+            return isUsernameValid && isTokenNotExpired && isRefresh;
+        } catch (Exception e) {
+            log.error("Erro ao validar refresh token: {}", e.getMessage());
+            return false;
+        }
+    }
+    
     private String buildToken(
             Map<String, Object> extraClaims,
             UserDetails userDetails,
