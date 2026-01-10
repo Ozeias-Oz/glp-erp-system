@@ -14,6 +14,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses. ApiResponses;
+
+import org.springframework.security.authentication.BadCredentialsException;
+import br.com.glprevenda.security.dto.RefreshTokenRequest;
 
 /**
  * Controller para autenticação (login/register).
@@ -121,30 +130,51 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
-    /**
-     * Renovar token (refresh).
-     * 
-     * POST /api/auth/refresh
-     * 
-     * Header: 
-     * Authorization: Bearer {refreshToken}
-     * 
-     * Retorna novo accessToken. 
-     * 
-     * TODO: Implementar lógica de refresh token
-     */
     
+    /**
+     * Renova tokens JWT usando Refresh Token
+     * 
+     * @param request DTO com refresh token
+     * @return Novos access token e refresh token
+     */
     @Operation(
-    	    summary = "Renovar token",
-    	    description = "Gera novo accessToken usando refreshToken válido"
-    	)
-    	@ApiResponses({
-    	    @ApiResponse(responseCode = "200", description = "Token renovado"),
-    	    @ApiResponse(responseCode = "401", description = "Refresh token inválido")
-    	})
+            summary = "Renovar tokens",
+            description = "Renova access token e refresh token usando um refresh token válido"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Tokens renovados com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AuthResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Refresh token inválido, expirado ou usuário inativo",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Dados inválidos",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @PostMapping("/refresh")
-    public ResponseEntity<String> refreshToken() {
-        // TODO: Implementar refresh token na próxima issue
-        return ResponseEntity.ok("Refresh token - A implementar");
+    public ResponseEntity<AuthResponse> refreshToken(
+                @Valid @RequestBody RefreshTokenRequest request) {
+        
+        log.info("Requisição de refresh token recebida");
+        
+        try {
+            AuthResponse response = authService.refreshToken(request);
+            log.info("Tokens renovados com sucesso para usuário: {}", response.getUsername());
+            return ResponseEntity.ok(response);
+            
+        } catch (BadCredentialsException | UsernameNotFoundException e) {
+            log.error("Falha ao renovar tokens: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }
