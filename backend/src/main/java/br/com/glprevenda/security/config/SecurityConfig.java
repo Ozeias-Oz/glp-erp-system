@@ -12,11 +12,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org. springframework.security.config.annotation. web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password. PasswordEncoder;
+import org.springframework.security.core. userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt. BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework. security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org. springframework.security.web.authentication. UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors. UrlBasedCorsConfigurationSource;
@@ -25,9 +25,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Configuração de Segurança do Spring Security. 
+ * Configuração de Segurança do Spring Security.   
  * 
- * Responsável por:
+ * Responsável por: 
  * - Definir endpoints públicos/privados
  * - Configurar autenticação JWT
  * - Habilitar CORS
@@ -38,7 +38,7 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Habilita @PreAuthorize, @Secured, etc.
+@EnableMethodSecurity  // ✅ Habilita @PreAuthorize, @Secured, etc.
 @RequiredArgsConstructor
 public class SecurityConfig {
     
@@ -46,14 +46,16 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     
     /**
-     * Configura a cadeia de filtros de segurança.
+     * Configura a cadeia de filtros de segurança. 
      * 
-     * Define:
+     * Define:  
      * - Endpoints públicos (login, register)
      * - Endpoints privados (resto)
      * - Desabilita CSRF (não precisa com JWT)
      * - Sessão STATELESS (sem cookies, só JWT)
      * - Adiciona filtro JWT
+     * 
+     * IMPORTANTE: Autorização específica (ADMIN vs VENDEDOR) é feita via @PreAuthorize nos controllers!
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -67,7 +69,8 @@ public class SecurityConfig {
                 
                 // Configurar autorização de requisições
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints PÚBLICOS (não precisa autenticação)
+                        // ==================== ENDPOINTS PÚBLICOS ====================
+                        // Não precisa autenticação
                         .requestMatchers(
                                 "/api/auth/**",              // Login, Register, Refresh
                                 "/actuator/health",          // Health check
@@ -80,16 +83,19 @@ public class SecurityConfig {
                                 "/webjars/**"                // Swagger webjars
                         ).permitAll()
                         
-                        // Endpoints ADMIN (só ROLE_ADMIN)
-                        . requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ==================== ENDPOINTS ADMIN ====================
+                        // Apenas usuários com ROLE_ADMIN
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         
-                        // Resto precisa autenticação
+                        // ==================== RESTO ====================
+                        // Qualquer outro endpoint precisa autenticação
+                        // Autorização específica (ADMIN vs VENDEDOR) via @PreAuthorize nos controllers
                         .anyRequest().authenticated()
                 )
                 
                 // Sessão STATELESS (sem cookies, só JWT)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy. STATELESS)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 
                 // Configurar provider de autenticação
@@ -116,11 +122,12 @@ public class SecurityConfig {
                 "http://localhost:3000",      // React dev
                 "http://localhost:4200",      // Angular dev
                 "http://localhost:5173",      // Vite dev
-                "http://localhost:8081"       // Homologação
+                "http://localhost:8081",      // Homologação
+                "http://localhost:8100"       // Ionic dev
         ));
         
         // Métodos HTTP permitidos
-        configuration.setAllowedMethods(Arrays.asList(
+        configuration. setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
         
@@ -138,9 +145,9 @@ public class SecurityConfig {
     }
     
     /**
-     * Configura provider de autenticação.
+     * Configura provider de autenticação.  
      * 
-     * Responsável por: 
+     * Responsável por:  
      * - Carregar usuário do banco (UserDetailsService)
      * - Validar senha (PasswordEncoder)
      */
@@ -153,9 +160,9 @@ public class SecurityConfig {
     }
     
     /**
-     * Bean do AuthenticationManager.
+     * Bean do AuthenticationManager. 
      * 
-     * Usado em AuthService. login() para autenticar usuário. 
+     * Usado em AuthService. login() para autenticar usuário.  
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) 

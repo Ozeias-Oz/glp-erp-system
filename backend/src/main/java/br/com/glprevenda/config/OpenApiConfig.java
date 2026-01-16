@@ -1,13 +1,13 @@
 package br.com.glprevenda.config;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io. swagger.v3.oas. annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.info.Contact;
+import io. swagger.v3.oas. annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.info. License;
+import io.swagger. v3.oas.annotations. security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context. annotation.Configuration;
 
 /**
  * Configuração do SpringDoc OpenAPI (Swagger).
@@ -36,11 +36,12 @@ import org.springframework.context.annotation.Configuration;
                         - Relatórios financeiros
                         
                         **Como usar:**
-                        1. Registre-se em `/api/auth/register`
-                        2. Faça login em `/api/auth/login`
-                        3. Copie o `accessToken` da resposta
-                        4. Clique em "Authorize" (cadeado) e cole o token
-                        5. Agora pode testar os endpoints protegidos!
+                        1. Registre-se em `/api/auth/register` ou faça login em `/api/auth/login`
+                        2. Copie o `accessToken` da resposta
+                        3. Clique em "Authorize" 🔓 (canto superior direito)
+                        4. Cole APENAS o token (sem "Bearer")
+                        5. Clique em "Authorize" → "Close"
+                        6. Agora pode testar os endpoints protegidos!  
                         """,
                 contact = @Contact(
                         name = "Ozeias",
@@ -64,7 +65,7 @@ import org.springframework.context.annotation.Configuration;
         }
 )
 @SecurityScheme(
-        name = "Bearer Authentication",
+        name = "bearer-auth",  // ✅ NOME PADRONIZADO (SEM ESPAÇO)
         type = SecuritySchemeType.HTTP,
         bearerFormat = "JWT",
         scheme = "bearer",
@@ -78,6 +79,8 @@ import org.springframework.context.annotation.Configuration;
                 
                 **Exemplo de token:**
                 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... 
+                
+                **IMPORTANTE:** O Swagger adiciona "Bearer " automaticamente!
                 """
 )
 public class OpenApiConfig {

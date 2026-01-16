@@ -1,93 +1,176 @@
 package br.com.glprevenda.shared.exception;
 
-import br.com.glprevenda.shared.dto.ApiResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j. Slf4j;
+import org. springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework. validation.FieldError;
+import org.springframework. security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind. MethodArgumentNotValidException;
+import org.springframework.web.bind. annotation.ExceptionHandler;
+import org.springframework.web.bind. annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import java.time.LocalDateTime;
-
 /**
- * Tratamento global de exceções da aplicação.
- * Centraliza o handling de erros para retornar respostas padronizadas.
+ * Tratamento global de exceções da API
+ * 
+ * Captura exceções lançadas pelos controllers e retorna
+ * respostas padronizadas em JSON
+ * 
+ * @author Ozeias
  */
-@Slf4j // Anotação Lombok para logging
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Trata exceções de recurso não encontrado.
+     * Trata exceções de recurso não encontrado (404 Not Found)
+     * 
+     * Exemplo:  Usuário com ID 999 não existe
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(
-            ResourceNotFoundException ex, 
-            WebRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex) {
         
-        log.error("Recurso não encontrado: {}", ex.getMessage());
+        log.warn("Recurso não encontrado: {}", ex.getMessage());
         
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
+        ApiErrorResponse error = ApiErrorResponse.builder()
                 .success(false)
                 .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
         
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**
-     * Trata exceções genéricas não mapeadas.
+     * Trata exceções de recurso duplicado (409 Conflict)
+     * 
+     * Exemplo: Username "ozeias" já está em uso
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGlobalException(
-            Exception ex, 
-            WebRequest request) {
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateResource(
+            DuplicateResourceException ex) {
         
-        log.error("Erro interno do servidor: ", ex);
+        log.warn("Recurso duplicado:  {}", ex.getMessage());
         
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
+        ApiErrorResponse error = ApiErrorResponse.builder()
                 .success(false)
-                .message("Erro interno do servidor. Contate o administrador.")
+                .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
-    
+
     /**
-     * Trata erros de validação de campos (Bean Validation)
+     * Trata erros de validação (400 Bad Request)
      * 
-     * @param ex Exceção de validação
-     * @return Resposta com detalhes dos erros de validação
+     * Exemplo: Campo "email" inválido, campo "password" obrigatório
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+    public ResponseEntity<ApiErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex) {
         
         Map<String, String> errors = new HashMap<>();
-        
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
         
-        log.error("Erro de validação: {}", errors);
+        log.warn("Erro de validação: {}", errors);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", "Erro de validação");
-        response.put("errors", errors);
-        response.put("timestamp", LocalDateTime.now());
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .success(false)
+                .message("Erro de validação nos campos")
+                .data(errors)
+                .timestamp(LocalDateTime.now())
+                .build();
         
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Trata exceções de autenticação (401 Unauthorized)
+     * 
+     * Exemplo:  Senha incorreta, usuário não existe
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(
+            AuthenticationException ex) {
+        
+        log.warn("Erro de autenticação: {}", ex.getMessage());
+        
+        ApiErrorResponse error = ApiErrorResponse. builder()
+                .success(false)
+                .message("Credenciais inválidas")
+                .timestamp(LocalDateTime.now())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Trata exceções de acesso negado (403 Forbidden)
+     * 
+     * Exemplo: Vendedor tentando acessar endpoint de ADMIN
+     */
+    @ExceptionHandler(AccessDeniedException. class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            AccessDeniedException ex) {
+        
+        log.warn("Acesso negado: {}", ex.getMessage());
+        
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .success(false)
+                .message("Acesso negado.  Você não tem permissão para acessar este recurso.")
+                .timestamp(LocalDateTime.now())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * Trata RuntimeException genérica (500 Internal Server Error)
+     * 
+     * Exemplo:  Erro ao salvar no banco, erro de lógica
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiErrorResponse> handleRuntimeException(
+            RuntimeException ex) {
+        
+        log.error("Erro interno: {}", ex.getMessage(), ex);
+        
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .success(false)
+                .message("Erro interno do servidor.  Contate o administrador.")
+                .timestamp(LocalDateTime.now())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    /**
+     * Trata todas as outras exceções (500 Internal Server Error)
+     * 
+     * Fallback para erros não mapeados
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericException(
+            Exception ex) {
+        
+        log.error("Erro inesperado: {}", ex. getMessage(), ex);
+        
+        ApiErrorResponse error = ApiErrorResponse.builder()
+                .success(false)
+                .message("Erro inesperado. Contate o administrador.")
+                .timestamp(LocalDateTime.now())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
