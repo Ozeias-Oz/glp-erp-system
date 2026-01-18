@@ -1,8 +1,8 @@
 spring:
   datasource:
     url:  jdbc:postgresql://localhost:5432/glp_erp_dev
-    username: glp_user
-    password: glp_pass_2024
+    username: glprevenda_user
+    password: glprevenda_pass
     driver-class-name: org.postgresql.Driver
   
   jpa: 

@@ -1,0 +1,142 @@
+
+# ========================================
+# REDES
+# ========================================
+networks:
+  glp-network: 
+    driver: bridge
+
+# ========================================
+# VOLUMES
+# ========================================
+volumes:
+  postgres-data:
+    driver: local
+  postgres-backup:
+    driver: local
+
+# ========================================
+# SERVIÇOS
+# ========================================
+services:
+  
+  # ==================== POSTGRESQL ====================
+  postgres:
+    image: postgres:16-alpine
+    container_name: glp-postgres
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-glprevenda_db}
+      POSTGRES_USER:  ${POSTGRES_USER:-glprevenda_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-glprevenda_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: America/Sao_Paulo
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-backup:/backups
+    
+    networks: 
+      - glp-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-glprevenda_user} -d ${POSTGRES_DB:-glprevenda_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==================== BACKEND ====================
+  backend:
+    build:
+      context: . 
+      dockerfile: Dockerfile
+    
+    container_name: glp-backend
+    restart: unless-stopped
+    
+    environment:
+      # Spring Profiles
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-glprevenda_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-glprevenda_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-glprevenda_pass}
+      
+      # JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: false
+      
+      # Flyway
+      SPRING_FLYWAY_ENABLED:  true
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: true
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION:  ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      
+      # Timezone
+      TZ: America/Sao_Paulo
+      
+      # Java Options
+      JAVA_OPTS: -Xmx512m -Xms256m -XX:+UseG1GC
+    
+    ports:
+      - "8080:8080"
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks: 
+      - glp-network
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    deploy: 
+      resources:
+        limits: 
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+  # ==================== ADMINER (Gerenciador de DB) ====================
+  adminer: 
+    image: adminer:latest
+    container_name: glp-adminer
+    restart: unless-stopped
+    
+    ports:
+      - "8081:8080"
+    
+    depends_on:
+      - postgres
+    
+    networks:
+      - glp-network
+    
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha

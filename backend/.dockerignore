@@ -1,0 +1,45 @@
+# Maven
+target/
+! target/*. jar
+pom.xml. tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*. iml
+. vscode/
+. settings/
+.classpath
+.project
+. factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+backend/.gitignore
+
+# Environment variables
+.env
+.env. local
+.env.production
+.env.*. local
+
+# Docker
+docker-compose.override.yml

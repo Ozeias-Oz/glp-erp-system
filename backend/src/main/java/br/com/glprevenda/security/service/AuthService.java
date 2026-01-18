@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto. bcrypt.BCryptPasswordEncoder;
 
 import br.com.glprevenda.security.dto.AuthResponse;
 import br.com.glprevenda.security.dto. LoginRequest;
@@ -124,9 +125,9 @@ public class AuthService {
      */
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        log.info("Tentativa de login:   {}", request.getUsernameOrEmail());
+        log.info("Tentativa de login:  {}", request.getUsernameOrEmail());
         
-        // Autenticar (Spring Security valida a senha automaticamente)
+        // Autenticar
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsernameOrEmail(),
@@ -137,12 +138,12 @@ public class AuthService {
         // Usuário autenticado
         User user = (User) authentication.getPrincipal();
         
-        log.info("Login bem-sucedido:   ID={}, Username={}", 
+        log.info("Login bem-sucedido:  ID={}, Username={}", 
                 user.getId(), user.getUsername());
         
         // Gerar tokens
         String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
+        String refreshToken = jwtService. generateRefreshToken(user);
         
         // Retornar resposta
         return buildAuthResponse(user, accessToken, refreshToken);
